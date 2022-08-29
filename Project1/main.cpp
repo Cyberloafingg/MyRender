@@ -132,17 +132,39 @@ int main(int argc, char** argv) {
     }
     // 绘制模型
     TGAImage image(width, height, TGAImage::RGB);
+
+    Vec3f light_dir(0, 0, -1);
+    bool flag;
+    int count = 0;
     for (int i = 0; i < model->nfaces(); i++) {
         std::vector<int> face = model->face(i);
         Vec2i screen_coords[3];
+        Vec3f world_coords[3];
         for (int j = 0; j < 3; j++) {
-            Vec3f world_coords = model->vert(face[j]);
-            screen_coords[j] = Vec2i((world_coords.x + 1.) * width / 2., (world_coords.y + 1.) * height / 2.);
+            Vec3f v = model->vert(face[j]);
+            screen_coords[j] = Vec2i((v.x + 1.) * width / 2., (v.y + 1.) * height / 2.);
+            world_coords[j] = v;
         }
-        triangle(screen_coords[0], screen_coords[1], screen_coords[2], image, TGAColor(rand() % 255, rand() % 255, rand() % 255, 255));
+        // 求叉乘
+        std::cout << i << std::endl;
+        std::cout << "A:" << world_coords[0] << "B:" << world_coords[1] << "C:" << world_coords[2];
+        Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+        std::cout << "Z:"  << n.z << std::endl;
+        if (n.z > 0) count++;
+        n.normalize();
+        float intensity = n * light_dir;
+        /*std::cout << intensity << std::endl << std::endl;*/
+        if (n.z > 0) {
+            triangle(screen_coords[0], screen_coords[1], screen_coords[2], image, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
+            if (i == (model->nfaces()-2) || i == 993 || i == 995) {
+                triangle(screen_coords[0], screen_coords[1], screen_coords[2], image, red);
+            }
+        }
     }
+    std::cout << count << std::endl;
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     image.write_tga_file("output.tga");
     delete model;
     return 0;
 }
+    
